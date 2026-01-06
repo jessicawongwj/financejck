@@ -3,11 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Finance Pro</title>
+    <title>jckfinance</title>
     
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="apple-mobile-web-app-title" content="jckfinance""
+    <meta name="apple-mobile-web-app-title" content="jckfinance">
+    <meta name="mobile-web-app-capable" content="yes">
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -46,9 +47,6 @@
 
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .mono { font-variant-numeric: tabular-nums; letter-spacing: -0.5px; }
-        
-        /* Smooth transitions for charts */
-        #chartCanvas { max-height: 200px; }
     </style>
 </head>
 <body class="pb-10">
@@ -56,11 +54,11 @@
     <div class="max-w-md mx-auto px-5 py-8">
         <header class="flex justify-between items-center mb-8">
             <div>
-                <h1 class="text-2xl font-extrabold tracking-tight" style="color: var(--blue-deep);">jckfinance>j c>
+                <h1 class="text-2xl font-extrabold tracking-tight" style="color: var(--blue-deep);">jckfinance</h1>
                 <p id="dateDisplay" class="text-[10px] font-bold text-slate-400 uppercase tracking-widest"></p>
             </div>
             <div class="flex gap-2">
-                <button onclick="exportData()" class="w-10 h-10 flex items-center justify-center rounded-full bg-white border border-slate-100 shadow-sm">
+                <button onclick="exportData()" class="w-10 h-10 flex items-center justify-center rounded-full bg-white border border-slate-100 shadow-sm active:bg-slate-50">
                     <svg class="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
                 </button>
             </div>
@@ -70,7 +68,7 @@
             <div class="relative z-10 text-white">
                 <div class="flex justify-between items-center mb-1">
                     <p class="text-xs font-medium text-blue-100 opacity-70">Monthly Net Balance</p>
-                    <select id="monthSelector" onchange="updateStats()" class="bg-white/10 text-[10px] font-bold rounded-lg px-2 py-1 outline-none border-none"></select>
+                    <select id="monthSelector" onchange="updateStats()" class="bg-white/10 text-[10px] font-bold rounded-lg px-2 py-1 outline-none border-none text-white"></select>
                 </div>
                 <h2 id="netIncome" class="text-4xl font-black mb-6 mono">$ 0.00</h2>
                 <div class="grid grid-cols-2 gap-4 border-t border-white/10 pt-4">
@@ -202,9 +200,9 @@
         function saveRecord() {
             const amt = parseFloat(document.getElementById('amount').value);
             const note = document.getElementById('note').value || 'General';
-            if (!amt || !selectedCat) return alert('Enter amount & category');
+            if (!amt || !selectedCat) return;
 
-            const records = JSON.parse(localStorage.getItem('f_pro_data') || '[]');
+            const records = JSON.parse(localStorage.getItem('jck_finance_data') || '[]');
             records.unshift({
                 id: Date.now(),
                 type: currentType,
@@ -213,7 +211,7 @@
                 note: note,
                 date: new Date().toISOString().split('T')[0]
             });
-            localStorage.setItem('f_pro_data', JSON.stringify(records));
+            localStorage.setItem('jck_finance_data', JSON.stringify(records));
             
             document.getElementById('amount').value = '';
             document.getElementById('note').value = '';
@@ -230,7 +228,7 @@
 
         function updateStats() {
             const selM = document.getElementById('monthSelector').value;
-            const records = JSON.parse(localStorage.getItem('f_pro_data') || '[]');
+            const records = JSON.parse(localStorage.getItem('jck_finance_data') || '[]');
             const monthRecs = records.filter(r => r.date.startsWith(selM));
 
             const exp = monthRecs.filter(r => r.type === 'expense').reduce((s, r) => s + r.amount, 0);
@@ -240,16 +238,15 @@
             document.getElementById('totalIncome').innerText = `$ ${inc.toFixed(2)}`;
             document.getElementById('netIncome').innerText = `$ ${(inc - exp).toFixed(2)}`;
 
-            // Ongoing Avg Calculation
-            const subs = JSON.parse(localStorage.getItem('f_pro_subs') || '[]');
-            const qs = JSON.parse(localStorage.getItem('f_pro_qs') || '[]');
+            const subs = JSON.parse(localStorage.getItem('jck_subs') || '[]');
+            const qs = JSON.parse(localStorage.getItem('jck_qs') || '[]');
             const avg = subs.reduce((s,r)=>s+r.amt, 0) + qs.reduce((s,r)=>s+(r.amt/3), 0);
             document.getElementById('avgOngoingLabel').innerText = `Avg: $${avg.toFixed(0)}/mo`;
         }
 
         function renderHistory() {
-            const records = JSON.parse(localStorage.getItem('f_pro_data') || '[]');
-            document.getElementById('history').innerHTML = records.slice(0, 10).map(r => `
+            const records = JSON.parse(localStorage.getItem('jck_finance_data') || '[]');
+            document.getElementById('history').innerHTML = records.slice(0, 15).map(r => `
                 <div class="flex items-center justify-between">
                     <div class="flex items-center gap-4">
                         <div class="w-11 h-11 flex items-center justify-center bg-slate-50 rounded-2xl text-lg">${CATEGORIES[r.type].find(c=>c.name===r.category)?.icon || '💰'}</div>
@@ -258,50 +255,50 @@
                             <p class="text-[10px] text-slate-400 font-medium">${r.note}</p>
                         </div>
                     </div>
-                    <div class="text-right">
-                        <p class="text-sm font-black mono ${r.type==='expense'?'text-slate-800':'text-blue-600'}">${r.type==='expense'?'-':'+'} $${r.amount.toFixed(2)}</p>
-                    </div>
+                    <p class="text-sm font-black mono ${r.type==='expense'?'text-slate-800':'text-blue-600'}">${r.type==='expense'?'-':'+'} $${r.amount.toFixed(2)}</p>
                 </div>
             `).join('') || '<p class="text-center text-xs text-slate-300">No records yet</p>';
         }
 
-        // Ongoing Logic
         function addSubscription() {
-            const n = prompt("App Name (e.g. Netflix):");
-            const a = parseFloat(prompt("Monthly Cost ($):"));
+            const n = prompt("App Name:");
+            const a = parseFloat(prompt("Monthly Amount ($):"));
             if (n && a) {
-                const s = JSON.parse(localStorage.getItem('f_pro_subs') || '[]');
+                const s = JSON.parse(localStorage.getItem('jck_subs') || '[]');
                 s.push({id: Date.now(), name: n, amt: a});
-                localStorage.setItem('f_pro_subs', JSON.stringify(s));
+                localStorage.setItem('jck_subs', JSON.stringify(s));
                 renderOngoing(); updateStats();
             }
         }
 
         function addQuarterly() {
-            const n = prompt("Bill Name (e.g. Water):");
-            const a = parseFloat(prompt("Quarterly Cost ($):"));
+            const n = prompt("Bill Name:");
+            const a = parseFloat(prompt("Quarterly Amount ($):"));
             if (n && a) {
-                const s = JSON.parse(localStorage.getItem('f_pro_qs') || '[]');
+                const s = JSON.parse(localStorage.getItem('jck_qs') || '[]');
                 s.push({id: Date.now(), name: n, amt: a});
-                localStorage.setItem('f_pro_qs', JSON.stringify(s));
+                localStorage.setItem('jck_qs', JSON.stringify(s));
                 renderOngoing(); updateStats();
             }
         }
 
         function renderOngoing() {
-            const subs = JSON.parse(localStorage.getItem('f_pro_subs') || '[]');
-            const qs = JSON.parse(localStorage.getItem('f_pro_qs') || '[]');
+            const subs = JSON.parse(localStorage.getItem('jck_subs') || '[]');
+            const qs = JSON.parse(localStorage.getItem('jck_qs') || '[]');
             document.getElementById('subList').innerHTML = subs.slice(-3).map(s => `<div class="flex justify-between text-[10px] font-bold text-slate-600"><span>${s.name}</span><span>$${s.amt}</span></div>`).join('');
             document.getElementById('qList').innerHTML = qs.slice(-3).map(q => `<div class="flex justify-between text-[10px] font-bold text-orange-600"><span>${q.name}</span><span>$${q.amt}</span></div>`).join('');
         }
 
-        function clearAll() { if(confirm("Clear all transactions?")) { localStorage.removeItem('f_pro_data'); location.reload(); } }
+        function clearAll() { if(confirm("Clear all transactions?")) { localStorage.removeItem('jck_finance_data'); location.reload(); } }
         
         function exportData() {
-            const records = JSON.parse(localStorage.getItem('f_pro_data') || '[]');
-            let csv = 'Type,Category,Amount,Date,Note\n' + records.map(r => `${r.type},${r.category},${r.amount},${r.date},${r.note}`).join('\n');
+            const records = JSON.parse(localStorage.getItem('jck_finance_data') || '[]');
+            let csv = '\ufeffType,Category,Amount,Date,Note\n' + records.map(r => `${r.type},${r.category},${r.amount},${r.date},${r.note}`).join('\n');
             const blob = new Blob([csv], { type: 'text/csv' });
-            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'finance_export.csv'; a.click();
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'jckfinance_export.csv';
+            a.click();
         }
 
         init();
