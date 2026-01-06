@@ -1,362 +1,293 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Finance Tracker - Blue Edition</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Finance App</title>
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="MyFinance">
+    <meta name="mobile-web-app-capable" content="yes">
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    
     <style>
         :root {
-            --blue-1: #1727AE;
-            --blue-2: #2C43B8;
-            --blue-3: #445BC1;
-            --blue-4: #6987D5;
-            --blue-5: #97BAEC;
-            --blue-6: #BBDFFA;
+            --brand-blue: #2C43B8;
+            --light-blue: #97BAEC;
+            --bg-gray: #F8FAFC;
         }
-
-        * { font-family: 'Poppins', sans-serif; }
 
         body { 
-            background-color: var(--blue-1);
-            background-image: 
-                radial-gradient(circle at 10% 20%, rgba(44, 67, 184, 0.4) 0%, transparent 40%),
-                radial-gradient(circle at 90% 80%, rgba(105, 135, 213, 0.3) 0%, transparent 40%);
-            background-attachment: fixed;
-            min-height: 100vh;
+            font-family: 'Inter', sans-serif; 
+            background-color: var(--bg-gray);
+            color: #1E293B;
+            -webkit-tap-highlight-color: transparent;
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+
+        .app-card {
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            border: 1px solid #F1F5F9;
+        }
+
+        .btn-primary {
+            background: var(--brand-blue);
             color: white;
+            transition: transform 0.1s;
         }
-
-        /* 玻璃拟态卡片 */
-        .glass-card {
-            background: rgba(255, 255, 255, 0.08);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
-        }
-
-        /* 统一输入框风格 */
-        .input-field {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            color: var(--blue-6);
-            transition: all 0.3s ease;
-        }
-        .input-field:focus {
-            background: rgba(255, 255, 255, 0.1);
-            border-color: var(--blue-5);
-            outline: none;
-            box-shadow: 0 0 15px rgba(151, 186, 236, 0.2);
-        }
-
-        /* 按钮风格 */
-        .primary-btn {
-            background: linear-gradient(135deg, var(--blue-3) 0%, var(--blue-2) 100%);
-            color: white;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        .primary-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(23, 39, 174, 0.4);
-            filter: brightness(1.1);
-        }
+        .btn-primary:active { transform: scale(0.95); }
 
         .tab-active {
-            background: white !important;
-            color: var(--blue-1) !important;
-            font-weight: 800;
+            background: var(--brand-blue);
+            color: white;
         }
 
-        .category-btn {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            transition: all 0.3s ease;
-        }
         .category-selected {
-            background: var(--blue-5) !important;
-            color: var(--blue-1) !important;
-            border-color: var(--blue-6);
-            transform: scale(1.05);
+            border: 2px solid var(--brand-blue) !important;
+            background: #EFF6FF !important;
         }
 
-        /* 隐藏数字输入框箭头 */
-        input::-webkit-outer-spin-button,
-        input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-
-        .mono { font-family: 'Poppins', monospace; font-variant-numeric: tabular-nums; }
+        /* 隐藏滚动条 */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
         
-        .custom-scroll::-webkit-scrollbar { width: 6px; }
-        .custom-scroll::-webkit-scrollbar-track { background: transparent; }
-        .custom-scroll::-webkit-scrollbar-thumb { background: var(--blue-4); border-radius: 10px; }
+        .mono { font-variant-numeric: tabular-nums; letter-spacing: -0.5px; }
     </style>
 </head>
-<body class="p-4 md:p-8">
-    <div class="max-w-4xl mx-auto">
-        <header class="flex justify-between items-end mb-10 px-2">
+<body class="safe-top">
+
+    <div class="max-w-md mx-auto min-h-screen px-4 py-6">
+        <header class="flex justify-between items-center mb-6 pt-4">
             <div>
-                <h1 class="text-4xl font-extrabold tracking-tight text-white">Finance <span class="text-[var(--blue-5)]">Tracker</span></h1>
-                <p class="text-[var(--blue-6)] opacity-70 text-sm font-medium">Monitoring your AUD finances in style</p>
+                <h1 class="text-2xl font-extrabold tracking-tight text-slate-900">我的账本</h1>
+                <p id="currentDateDisplay" class="text-xs text-slate-500 font-medium uppercase tracking-wider"></p>
             </div>
-            <button onclick="exportData()" class="px-5 py-2.5 glass-card rounded-2xl text-xs font-bold uppercase tracking-widest hover:bg-white hover:text-[var(--blue-1)] transition-all">
-                Export CSV
+            <button onclick="exportData()" class="p-2 text-slate-400 hover:text-blue-600">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
             </button>
         </header>
 
-        <div class="grid lg:grid-cols-12 gap-8">
-            <div class="lg:col-span-5 space-y-6">
-                <div class="glass-card rounded-[2.5rem] p-8">
-                    <div class="flex p-1.5 bg-black/20 rounded-2xl mb-8">
-                        <button id="expenseTab" onclick="switchType('expense')" class="tab-active flex-1 py-3 rounded-xl text-sm font-bold transition-all">Expenses</button>
-                        <button id="incomeTab" onclick="switchType('income')" class="flex-1 py-3 rounded-xl text-sm font-bold transition-all text-white/50">Income</button>
-                    </div>
-
-                    <div class="space-y-6">
-                        <div>
-                            <label class="text-[10px] font-bold text-[var(--blue-5)] uppercase tracking-[0.2em] mb-2 block">Transaction Amount</label>
-                            <div class="relative">
-                                <span class="absolute left-0 top-1/2 -translate-y-1/2 text-3xl font-bold text-[var(--blue-6)]">$</span>
-                                <input id="amount" type="number" step="0.01" placeholder="0.00" 
-                                    class="w-full pl-8 bg-transparent text-5xl font-extrabold outline-none text-white placeholder-white/10 mono">
-                            </div>
-                        </div>
-
-                        <div>
-                            <label class="text-[10px] font-bold text-[var(--blue-5)] uppercase tracking-[0.2em] mb-2 block">Category</label>
-                            <div id="categoryContainer" class="grid grid-cols-3 gap-2"></div>
-                        </div>
-
-                        <div>
-                            <label class="text-[10px] font-bold text-[var(--blue-5)] uppercase tracking-[0.2em] mb-2 block">Details</label>
-                            <input id="note" type="text" placeholder="e.g. Weekly Groceries" class="input-field w-full p-4 rounded-2xl text-sm">
-                        </div>
-
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <label class="text-[10px] font-bold text-[var(--blue-5)] uppercase tracking-[0.2em] mb-2 block">Date</label>
-                                <input id="date" type="date" class="input-field w-full p-4 rounded-2xl text-xs font-bold">
-                            </div>
-                            <div class="flex items-end">
-                                <button onclick="saveRecord()" class="primary-btn w-full h-[54px] rounded-2xl font-bold text-sm uppercase tracking-widest">Save</button>
-                            </div>
-                        </div>
-                    </div>
+        <div class="app-card p-6 mb-6 bg-gradient-to-br from-blue-700 to-blue-900 text-white border-none">
+            <div class="flex justify-between items-start mb-4">
+                <p class="text-sm font-medium text-blue-100 opacity-80">本月结余 (AUD)</p>
+                <select id="monthSelector" onchange="updateStats()" class="bg-white/10 border-none text-xs rounded-lg px-2 py-1 outline-none"></select>
+            </div>
+            <div id="netIncome" class="text-4xl font-black mb-6 mono">$ 0.00</div>
+            <div class="grid grid-cols-2 gap-4 border-t border-white/10 pt-4">
+                <div>
+                    <p class="text-[10px] text-blue-200 uppercase font-bold tracking-widest">月收入</p>
+                    <p id="totalIncome" class="text-lg font-bold mono">$ 0.00</p>
+                </div>
+                <div>
+                    <p class="text-[10px] text-blue-200 uppercase font-bold tracking-widest">月支出</p>
+                    <p id="totalExpense" class="text-lg font-bold mono">$ 0.00</p>
                 </div>
             </div>
+        </div>
 
-            <div class="lg:col-span-7 space-y-6">
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="glass-card rounded-3xl p-6">
-                        <p class="text-[10px] font-bold text-[var(--blue-6)] opacity-60 uppercase mb-1">Expenses</p>
-                        <p id="totalExpense" class="text-2xl font-black mono text-white">$0.00</p>
-                    </div>
-                    <div class="glass-card rounded-3xl p-6 bg-white/[0.15]">
-                        <p class="text-[10px] font-bold text-[var(--blue-6)] uppercase mb-1">Net Balance</p>
-                        <p id="netIncome" class="text-2xl font-black mono text-white">$0.00</p>
-                    </div>
+        <div class="app-card p-5 mb-6">
+            <div class="flex gap-2 mb-6 p-1 bg-slate-100 rounded-xl">
+                <button id="expenseTab" onclick="switchType('expense')" class="tab-active flex-1 py-2 rounded-lg text-sm font-bold transition-all">支出</button>
+                <button id="incomeTab" onclick="switchType('income')" class="flex-1 py-2 rounded-lg text-sm font-bold text-slate-500 transition-all">收入</button>
+            </div>
+
+            <div class="space-y-4">
+                <div class="relative">
+                    <span class="absolute left-0 bottom-2 text-2xl font-bold text-slate-300">$</span>
+                    <input id="amount" type="number" step="0.01" placeholder="0.00" class="w-full pl-6 pb-2 text-4xl font-black outline-none border-b-2 border-slate-100 focus:border-blue-500 transition-all mono text-slate-800">
                 </div>
 
-                <div class="glass-card rounded-[2.5rem] p-8">
-                    <div class="flex justify-between items-center mb-6">
-                        <h3 class="font-bold text-lg">Spending Analysis</h3>
-                        <select id="monthSelector" onchange="updateStats()" class="bg-black/20 border-none rounded-xl px-4 py-2 text-xs font-bold text-[var(--blue-5)] outline-none"></select>
+                <div id="categoryContainer" class="flex gap-2 overflow-x-auto no-scrollbar py-2">
                     </div>
-                    <div class="h-[250px] flex items-center justify-center">
-                        <canvas id="categoryChart"></canvas>
-                    </div>
-                </div>
 
-                <div class="glass-card rounded-[2.5rem] p-8">
-                    <div class="flex justify-between items-center mb-6">
-                        <h3 class="font-bold text-lg">Timeline</h3>
-                        <button onclick="clearAll()" class="text-[10px] font-bold text-white/30 hover:text-red-400 transition-colors uppercase tracking-widest">Clear All</button>
-                    </div>
-                    <div id="history" class="space-y-4 max-h-[400px] overflow-y-auto pr-4 custom-scroll"></div>
+                <input id="note" type="text" placeholder="备注内容..." class="w-full p-3 bg-slate-50 rounded-xl text-sm outline-none focus:ring-2 ring-blue-100">
+                
+                <button onclick="saveRecord()" class="btn-primary w-full py-4 rounded-2xl font-bold text-lg shadow-lg shadow-blue-200">确认入账</button>
+            </div>
+        </div>
+
+        <div class="mb-6">
+            <h3 class="text-sm font-bold text-slate-800 mb-3 px-1 flex justify-between">
+                <span>订阅与固定开支 (Ongoing)</span>
+                <span id="avgOngoing" class="text-blue-600 font-black mono text-xs"></span>
+            </h3>
+            <div class="grid grid-cols-2 gap-3">
+                <div class="app-card p-4">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase mb-3 tracking-tighter">App / 月缴</p>
+                    <div id="subscriptionList" class="space-y-2 mb-3 max-h-32 overflow-y-auto no-scrollbar"></div>
+                    <button onclick="addSubscriptionPrompt()" class="w-full py-1 text-[10px] font-bold text-blue-600 bg-blue-50 rounded-lg">+ 添加</button>
+                </div>
+                <div class="app-card p-4">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase mb-3 tracking-tighter">季度账单 (平摊)</p>
+                    <div id="quarterlyList" class="space-y-2 mb-3 max-h-32 overflow-y-auto no-scrollbar"></div>
+                    <button onclick="addQuarterlyPrompt()" class="w-full py-1 text-[10px] font-bold text-orange-600 bg-orange-50 rounded-lg">+ 添加</button>
                 </div>
             </div>
+        </div>
+
+        <div class="app-card p-5">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="font-bold text-slate-800">最近记录</h3>
+                <button onclick="clearAll()" class="text-xs text-slate-300 font-bold uppercase">清空历史</button>
+            </div>
+            <div id="history" class="space-y-4"></div>
         </div>
     </div>
 
     <script>
-        // 核心逻辑保持一致，针对新 UI 进行了微调
         const CATEGORIES = {
             expense: [
-                { name: 'Fixed', icon: '🏠' }, { name: 'Variable', icon: '🛒' },
-                { name: 'Fun', icon: '☕' }, { name: 'Transport', icon: '🚗' },
-                { name: 'Health', icon: '💊' }, { name: 'Other', icon: '📦' }
+                { name: '餐饮', icon: '🍱' }, { name: '交通', icon: '🚗' },
+                { name: '固定', icon: '🏠' }, { name: '变动', icon: '🛒' },
+                { name: '享乐', icon: '☕' }, { name: '其它', icon: '📦' }
             ],
             income: [
-                { name: 'Salary', icon: '💼' }, { name: 'Bonus', icon: '🎁' },
-                { name: 'Invest', icon: '📈' }, { name: 'Gifts', icon: '🎉' }
+                { name: '工资', icon: '💼' }, { name: '奖金', icon: '🎁' },
+                { name: '理财', icon: '📈' }, { name: '其它', icon: '💰' }
             ]
         };
 
         let currentType = 'expense';
         let selectedCategory = '';
-        let chartInstance = null;
 
         function init() {
-            document.getElementById('date').valueAsDate = new Date();
+            document.getElementById('currentDateDisplay').innerText = new Date().toLocaleDateString('zh-CN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
             generateMonthSelector();
             renderCategories();
             updateStats();
             renderHistory();
+            renderSubs();
         }
 
         function generateMonthSelector() {
             const selector = document.getElementById('monthSelector');
             const now = new Date();
             for (let i = 0; i < 12; i++) {
-                const d = new Date(now.getFullYear(), i, 1);
-                const value = `${now.getFullYear()}-${String(i + 1).padStart(2, '0')}`;
-                const isSelected = i === now.getMonth() ? 'selected' : '';
-                selector.innerHTML += `<option value="${value}" ${isSelected}>${d.toLocaleString('default', { month: 'short' })} ${now.getFullYear()}</option>`;
+                const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+                const val = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+                selector.innerHTML += `<option value="${val}">${d.toLocaleDateString('zh-CN', {month:'short', year:'numeric'})}</option>`;
             }
         }
 
         function switchType(type) {
             currentType = type;
+            document.getElementById('expenseTab').className = type === 'expense' ? 'tab-active flex-1 py-2 rounded-lg text-sm font-bold' : 'flex-1 py-2 text-slate-500 text-sm font-bold';
+            document.getElementById('incomeTab').className = type === 'income' ? 'tab-active flex-1 py-2 rounded-lg text-sm font-bold' : 'flex-1 py-2 text-slate-500 text-sm font-bold';
             selectedCategory = '';
-            document.getElementById('expenseTab').classList.toggle('tab-active', type === 'expense');
-            document.getElementById('incomeTab').classList.toggle('tab-active', type === 'income');
-            document.getElementById('expenseTab').classList.toggle('text-white/50', type !== 'expense');
-            document.getElementById('incomeTab').classList.toggle('text-white/50', type !== 'income');
             renderCategories();
         }
 
         function renderCategories() {
             const container = document.getElementById('categoryContainer');
             container.innerHTML = CATEGORIES[currentType].map(cat => `
-                <button onclick="selectCategory('${cat.name}')" data-category="${cat.name}"
-                    class="category-btn flex flex-col items-center justify-center p-3 rounded-2xl">
-                    <span class="text-xl mb-1">${cat.icon}</span>
-                    <span class="text-[9px] font-bold uppercase tracking-tighter">${cat.name}</span>
+                <button onclick="selectCategory('${cat.name}')" data-cat="${cat.name}" class="cat-btn flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-50 border-2 border-transparent transition-all">
+                    <span>${cat.icon}</span>
+                    <span class="text-xs font-bold text-slate-700">${cat.name}</span>
                 </button>
             `).join('');
         }
 
         function selectCategory(name) {
             selectedCategory = name;
-            document.querySelectorAll('.category-btn').forEach(btn => {
-                btn.classList.toggle('category-selected', btn.dataset.category === name);
+            document.querySelectorAll('.cat-btn').forEach(btn => {
+                btn.classList.toggle('category-selected', btn.dataset.cat === name);
             });
         }
 
         function saveRecord() {
             const amount = parseFloat(document.getElementById('amount').value);
-            const date = document.getElementById('date').value;
-            const note = document.getElementById('note').value.trim();
+            const note = document.getElementById('note').value || '未备注';
+            if (!amount || !selectedCategory) return;
 
-            if (!amount || !selectedCategory) return alert('Enter amount and select category');
-
-            const record = { id: Date.now(), type: currentType, amount, category: selectedCategory, note: note || 'Transaction', date };
-            const records = JSON.parse(localStorage.getItem('finance_tracker_aud') || '[]');
-            records.unshift(record);
-            localStorage.setItem('finance_tracker_aud', JSON.stringify(records));
-
+            const records = JSON.parse(localStorage.getItem('f_records_v3') || '[]');
+            records.unshift({
+                id: Date.now(),
+                type: currentType,
+                amount: amount,
+                category: selectedCategory,
+                note: note,
+                date: new Date().toISOString().split('T')[0]
+            });
+            localStorage.setItem('f_records_v3', JSON.stringify(records));
+            
             document.getElementById('amount').value = '';
             document.getElementById('note').value = '';
-            selectedCategory = '';
-            renderCategories();
             updateStats();
             renderHistory();
         }
 
         function updateStats() {
-            const selectedMonth = document.getElementById('monthSelector').value;
-            const records = JSON.parse(localStorage.getItem('finance_tracker_aud') || '[]');
-            const monthRecords = records.filter(r => r.date.startsWith(selectedMonth));
-            
-            const expense = monthRecords.filter(r => r.type === 'expense').reduce((sum, r) => sum + r.amount, 0);
-            const income = monthRecords.filter(r => r.type === 'income').reduce((sum, r) => sum + r.amount, 0);
+            const selMonth = document.getElementById('monthSelector').value;
+            const records = JSON.parse(localStorage.getItem('f_records_v3') || '[]');
+            const monthRecs = records.filter(r => r.date.startsWith(selMonth));
 
-            document.getElementById('totalExpense').textContent = '$' + expense.toLocaleString(undefined, {minimumFractionDigits: 2});
-            document.getElementById('netIncome').textContent = '$' + (income - expense).toLocaleString(undefined, {minimumFractionDigits: 2});
-            
-            updateChart(monthRecords.filter(r => r.type === 'expense'));
-        }
+            const exp = monthRecs.filter(r => r.type === 'expense').reduce((s, r) => s + r.amount, 0);
+            const inc = monthRecs.filter(r => r.type === 'income').reduce((s, r) => s + r.amount, 0);
 
-        function updateChart(records) {
-            const dataMap = {};
-            records.forEach(r => dataMap[r.category] = (dataMap[r.category] || 0) + r.amount);
+            document.getElementById('totalExpense').innerText = `$ ${exp.toFixed(2)}`;
+            document.getElementById('totalIncome').innerText = `$ ${inc.toFixed(2)}`;
+            document.getElementById('netIncome').innerText = `$ ${(inc - exp).toFixed(2)}`;
             
-            const ctx = document.getElementById('categoryChart').getContext('2d');
-            if (chartInstance) chartInstance.destroy();
-            
-            chartInstance = new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: Object.keys(dataMap),
-                    datasets: [{
-                        data: Object.values(dataMap),
-                        backgroundColor: ['#BBDFFA', '#97BAEC', '#6987D5', '#445BC1', '#2C43B8', '#1727AE'],
-                        borderWidth: 0,
-                        hoverOffset: 20
-                    }]
-                },
-                options: {
-                    cutout: '80%',
-                    plugins: { 
-                        legend: { position: 'right', labels: { color: '#BBDFFA', font: { size: 10, weight: '600' }, usePointStyle: true } }
-                    }
-                }
-            });
+            // 计算固定开支平均值
+            const subs = JSON.parse(localStorage.getItem('f_subs') || '[]');
+            const qs = JSON.parse(localStorage.getItem('f_qs') || '[]');
+            const avg = subs.reduce((s,r)=>s+r.amt, 0) + qs.reduce((s,r)=>s+(r.amt/3), 0);
+            document.getElementById('avgOngoing').innerText = `月均固定预留: $${avg.toFixed(2)}`;
         }
 
         function renderHistory() {
-            const records = JSON.parse(localStorage.getItem('finance_tracker_aud') || '[]');
-            const container = document.getElementById('history');
-            
-            container.innerHTML = records.slice(0, 15).map(r => `
-                <div class="flex items-center justify-between p-4 bg-white/5 rounded-3xl border border-white/5 transition-all hover:bg-white/10">
-                    <div class="flex items-center gap-4">
-                        <div class="w-12 h-12 glass-card rounded-2xl flex items-center justify-center text-xl">${CATEGORIES[r.type].find(c => c.name === r.category)?.icon || '💰'}</div>
+            const records = JSON.parse(localStorage.getItem('f_records_v3') || '[]');
+            document.getElementById('history').innerHTML = records.slice(0, 15).map(r => `
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 flex items-center justify-center bg-slate-50 rounded-xl text-lg">${CATEGORIES[r.type].find(c=>c.name===r.category)?.icon || '💰'}</div>
                         <div>
-                            <p class="font-bold text-sm text-white">${r.category}</p>
-                            <p class="text-[10px] text-[var(--blue-6)] opacity-50 font-bold uppercase">${r.date} • ${r.note}</p>
+                            <p class="text-sm font-bold">${r.category}</p>
+                            <p class="text-[10px] text-slate-400 font-medium">${r.note}</p>
                         </div>
                     </div>
-                    <div class="text-right">
-                        <p class="font-black mono text-base ${r.type === 'expense' ? 'text-white' : 'text-[var(--blue-5)]'}">
-                            ${r.type === 'expense' ? '-' : '+'}$${r.amount.toFixed(2)}
-                        </p>
-                        <button onclick="deleteRecord(${r.id})" class="text-[9px] font-bold text-white/20 hover:text-red-400 uppercase tracking-tighter">Remove</button>
-                    </div>
+                    <p class="text-sm font-black mono ${r.type==='expense'?'text-slate-800':'text-blue-600'}">${r.type==='expense'?'-':'+'} ${r.amount.toFixed(2)}</p>
                 </div>
             `).join('');
         }
 
-        function deleteRecord(id) {
-            let records = JSON.parse(localStorage.getItem('finance_tracker_aud') || '[]');
-            records = records.filter(r => r.id !== id);
-            localStorage.setItem('finance_tracker_aud', JSON.stringify(records));
-            updateStats();
-            renderHistory();
-        }
-
-        function clearAll() {
-            if (confirm('Clear all data?')) {
-                localStorage.removeItem('finance_tracker_aud');
-                updateStats();
-                renderHistory();
+        // 订阅相关逻辑
+        function addSubscriptionPrompt() {
+            const name = prompt("订阅名称 (如 Netflix):");
+            const amt = parseFloat(prompt("每月金额 ($):"));
+            if (name && amt) {
+                const subs = JSON.parse(localStorage.getItem('f_subs') || '[]');
+                subs.push({id: Date.now(), name, amt});
+                localStorage.setItem('f_subs', JSON.stringify(subs));
+                renderSubs(); updateStats();
             }
         }
 
-        function exportData() {
-            const records = JSON.parse(localStorage.getItem('finance_tracker_aud') || '[]');
-            let csv = 'Type,Category,Amount,Date,Note\n';
-            records.forEach(r => csv += `${r.type},${r.category},${r.amount},${r.date},"${r.note}"\n`);
-            const blob = new Blob([csv], { type: 'text/csv' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `blue_finance_export.csv`;
-            a.click();
+        function addQuarterlyPrompt() {
+            const name = prompt("账单名称 (如 Water):");
+            const amt = parseFloat(prompt("每季度金额 ($):"));
+            if (name && amt) {
+                const qs = JSON.parse(localStorage.getItem('f_qs') || '[]');
+                qs.push({id: Date.now(), name, amt});
+                localStorage.setItem('f_qs', JSON.stringify(qs));
+                renderSubs(); updateStats();
+            }
         }
 
-        init();
-    </script>
-</body>
-</html>
+        function renderSubs() {
+            const subs = JSON.parse(localStorage.getItem('f_subs') || '[]');
+            const qs = JSON.parse(localStorage.getItem('f_qs') || '[]');
+            document.getElementById('subscriptionList').innerHTML = subs.map(s => `
+                <div class="flex justify-between text-[10px] bg-slate-50 p-1.5 rounded-lg font-bold">
+                    <span class="text-slate-500">${s.name}</span>
+                    <span>$${s.amt}</span>
+                </div>
+            `).join('');
+            document.getElementById('quarterlyList').innerHTML =
