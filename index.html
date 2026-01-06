@@ -1,221 +1,219 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Finance App</title>
+    <title>Finance Pro</title>
     
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="apple-mobile-web-app-title" content="MyFinance">
-    <meta name="mobile-web-app-capable" content="yes">
-
+    <meta name="apple-mobile-web-app-title" content="FinancePro">
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
     
     <style>
         :root {
-            --brand-blue: #2C43B8;
-            --light-blue: #97BAEC;
-            --bg-gray: #F8FAFC;
+            --blue-deep: #1727AE;
+            --blue-main: #2C43B8;
+            --blue-mid: #445BC1;
+            --blue-light: #97BAEC;
+            --bg-soft: #FBFBFE;
         }
 
         body { 
-            font-family: 'Inter', sans-serif; 
-            background-color: var(--bg-gray);
-            color: #1E293B;
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            background-color: var(--bg-soft);
+            color: #1A1C1E;
             -webkit-tap-highlight-color: transparent;
-            padding-bottom: env(safe-area-inset-bottom);
         }
 
-        .app-card {
+        .glass-card {
             background: white;
-            border-radius: 24px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-            border: 1px solid #F1F5F9;
+            border-radius: 28px;
+            border: 1px solid #F0F0F7;
+            box-shadow: 0 10px 30px -10px rgba(44, 67, 184, 0.08);
         }
 
-        .btn-primary {
-            background: var(--brand-blue);
-            color: white;
-            transition: transform 0.1s;
-        }
-        .btn-primary:active { transform: scale(0.95); }
+        .btn-blue { background: var(--blue-main); color: white; }
+        .btn-blue:active { transform: scale(0.96); opacity: 0.9; }
 
-        .tab-active {
-            background: var(--brand-blue);
-            color: white;
-        }
-
-        .category-selected {
-            border: 2px solid var(--brand-blue) !important;
-            background: #EFF6FF !important;
-        }
-
-        /* 隐藏滚动条 */
-        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .tab-active { background: var(--blue-main) !important; color: white !important; }
         
+        .cat-btn { transition: all 0.2s; border: 2px solid transparent; }
+        .cat-selected { border-color: var(--blue-main); background: #EEF2FF; }
+
+        .no-scrollbar::-webkit-scrollbar { display: none; }
         .mono { font-variant-numeric: tabular-nums; letter-spacing: -0.5px; }
+        
+        /* Smooth transitions for charts */
+        #chartCanvas { max-height: 200px; }
     </style>
 </head>
-<body class="safe-top">
+<body class="pb-10">
 
-    <div class="max-w-md mx-auto min-h-screen px-4 py-6">
-        <header class="flex justify-between items-center mb-6 pt-4">
+    <div class="max-w-md mx-auto px-5 py-8">
+        <header class="flex justify-between items-center mb-8">
             <div>
-                <h1 class="text-2xl font-extrabold tracking-tight text-slate-900">我的账本</h1>
-                <p id="currentDateDisplay" class="text-xs text-slate-500 font-medium uppercase tracking-wider"></p>
+                <h1 class="text-2xl font-extrabold tracking-tight" style="color: var(--blue-deep);">Finance Pro</h1>
+                <p id="dateDisplay" class="text-[10px] font-bold text-slate-400 uppercase tracking-widest"></p>
             </div>
-            <button onclick="exportData()" class="p-2 text-slate-400 hover:text-blue-600">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                </svg>
-            </button>
+            <div class="flex gap-2">
+                <button onclick="exportData()" class="w-10 h-10 flex items-center justify-center rounded-full bg-white border border-slate-100 shadow-sm">
+                    <svg class="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                </button>
+            </div>
         </header>
 
-        <div class="app-card p-6 mb-6 bg-gradient-to-br from-blue-700 to-blue-900 text-white border-none">
-            <div class="flex justify-between items-start mb-4">
-                <p class="text-sm font-medium text-blue-100 opacity-80">本月结余 (AUD)</p>
-                <select id="monthSelector" onchange="updateStats()" class="bg-white/10 border-none text-xs rounded-lg px-2 py-1 outline-none"></select>
-            </div>
-            <div id="netIncome" class="text-4xl font-black mb-6 mono">$ 0.00</div>
-            <div class="grid grid-cols-2 gap-4 border-t border-white/10 pt-4">
-                <div>
-                    <p class="text-[10px] text-blue-200 uppercase font-bold tracking-widest">月收入</p>
-                    <p id="totalIncome" class="text-lg font-bold mono">$ 0.00</p>
+        <div class="glass-card p-6 mb-8 bg-white overflow-hidden relative border-none" style="background: linear-gradient(135deg, var(--blue-deep) 0%, var(--blue-main) 100%);">
+            <div class="relative z-10 text-white">
+                <div class="flex justify-between items-center mb-1">
+                    <p class="text-xs font-medium text-blue-100 opacity-70">Monthly Net Balance</p>
+                    <select id="monthSelector" onchange="updateStats()" class="bg-white/10 text-[10px] font-bold rounded-lg px-2 py-1 outline-none border-none"></select>
                 </div>
-                <div>
-                    <p class="text-[10px] text-blue-200 uppercase font-bold tracking-widest">月支出</p>
-                    <p id="totalExpense" class="text-lg font-bold mono">$ 0.00</p>
-                </div>
-            </div>
-        </div>
-
-        <div class="app-card p-5 mb-6">
-            <div class="flex gap-2 mb-6 p-1 bg-slate-100 rounded-xl">
-                <button id="expenseTab" onclick="switchType('expense')" class="tab-active flex-1 py-2 rounded-lg text-sm font-bold transition-all">支出</button>
-                <button id="incomeTab" onclick="switchType('income')" class="flex-1 py-2 rounded-lg text-sm font-bold text-slate-500 transition-all">收入</button>
-            </div>
-
-            <div class="space-y-4">
-                <div class="relative">
-                    <span class="absolute left-0 bottom-2 text-2xl font-bold text-slate-300">$</span>
-                    <input id="amount" type="number" step="0.01" placeholder="0.00" class="w-full pl-6 pb-2 text-4xl font-black outline-none border-b-2 border-slate-100 focus:border-blue-500 transition-all mono text-slate-800">
-                </div>
-
-                <div id="categoryContainer" class="flex gap-2 overflow-x-auto no-scrollbar py-2">
+                <h2 id="netIncome" class="text-4xl font-black mb-6 mono">$ 0.00</h2>
+                <div class="grid grid-cols-2 gap-4 border-t border-white/10 pt-4">
+                    <div>
+                        <p class="text-[9px] text-blue-200 uppercase font-black tracking-wider">Income</p>
+                        <p id="totalIncome" class="text-lg font-bold mono">$ 0.00</p>
                     </div>
-
-                <input id="note" type="text" placeholder="备注内容..." class="w-full p-3 bg-slate-50 rounded-xl text-sm outline-none focus:ring-2 ring-blue-100">
-                
-                <button onclick="saveRecord()" class="btn-primary w-full py-4 rounded-2xl font-bold text-lg shadow-lg shadow-blue-200">确认入账</button>
+                    <div>
+                        <p class="text-[9px] text-blue-200 uppercase font-black tracking-wider">Expenses</p>
+                        <p id="totalExpense" class="text-lg font-bold mono">$ 0.00</p>
+                    </div>
+                </div>
             </div>
+            <div class="absolute -right-10 -top-10 w-40 h-40 bg-white/5 rounded-full"></div>
         </div>
 
-        <div class="mb-6">
-            <h3 class="text-sm font-bold text-slate-800 mb-3 px-1 flex justify-between">
-                <span>订阅与固定开支 (Ongoing)</span>
-                <span id="avgOngoing" class="text-blue-600 font-black mono text-xs"></span>
+        <section class="mb-8">
+            <h3 class="text-xs font-black text-slate-400 uppercase tracking-widest mb-4 px-1 flex justify-between">
+                <span>Ongoing & Utilities</span>
+                <span id="avgOngoingLabel" class="text-[var(--blue-main)]">Avg: $0/mo</span>
             </h3>
-            <div class="grid grid-cols-2 gap-3">
-                <div class="app-card p-4">
-                    <p class="text-[10px] font-bold text-slate-400 uppercase mb-3 tracking-tighter">App / 月缴</p>
-                    <div id="subscriptionList" class="space-y-2 mb-3 max-h-32 overflow-y-auto no-scrollbar"></div>
-                    <button onclick="addSubscriptionPrompt()" class="w-full py-1 text-[10px] font-bold text-blue-600 bg-blue-50 rounded-lg">+ 添加</button>
+            <div class="grid grid-cols-2 gap-4">
+                <div class="glass-card p-4">
+                    <p class="text-[9px] font-black text-slate-400 uppercase mb-3">App Subs</p>
+                    <div id="subList" class="space-y-2 mb-3"></div>
+                    <button onclick="addSubscription()" class="w-full py-2 text-[9px] font-black text-blue-600 bg-blue-50 rounded-xl hover:bg-blue-100 uppercase tracking-tighter">+ Monthly</button>
                 </div>
-                <div class="app-card p-4">
-                    <p class="text-[10px] font-bold text-slate-400 uppercase mb-3 tracking-tighter">季度账单 (平摊)</p>
-                    <div id="quarterlyList" class="space-y-2 mb-3 max-h-32 overflow-y-auto no-scrollbar"></div>
-                    <button onclick="addQuarterlyPrompt()" class="w-full py-1 text-[10px] font-bold text-orange-600 bg-orange-50 rounded-lg">+ 添加</button>
+                <div class="glass-card p-4">
+                    <p class="text-[9px] font-black text-slate-400 uppercase mb-3">Quarterly Bills</p>
+                    <div id="qList" class="space-y-2 mb-3"></div>
+                    <button onclick="addQuarterly()" class="w-full py-2 text-[9px] font-black text-orange-600 bg-orange-50 rounded-xl hover:bg-orange-100 uppercase tracking-tighter">+ Quarterly</button>
                 </div>
+            </div>
+        </section>
+
+        <div class="glass-card p-6 mb-8">
+            <div class="flex gap-2 mb-6 p-1 bg-slate-100 rounded-2xl">
+                <button id="expTab" onclick="switchType('expense')" class="tab-active flex-1 py-2.5 rounded-xl text-xs font-bold transition-all">Expense</button>
+                <button id="incTab" onclick="switchType('income')" class="flex-1 py-2.5 rounded-xl text-xs font-bold text-slate-400 transition-all">Income</button>
+            </div>
+
+            <div class="space-y-5">
+                <div class="flex gap-2 overflow-x-auto no-scrollbar pb-2">
+                    <button onclick="quickAdd(5.5, 'Fun', 'Coffee ☕')" class="whitespace-nowrap px-3 py-1.5 rounded-lg bg-slate-50 text-slate-600 text-[10px] font-bold border border-slate-100">☕ $5.5 Coffee</button>
+                    <button onclick="quickAdd(18, 'Variable', 'Lunch 🍱')" class="whitespace-nowrap px-3 py-1.5 rounded-lg bg-slate-50 text-slate-600 text-[10px] font-bold border border-slate-100">🍱 $18 Lunch</button>
+                    <button onclick="quickAdd(80, 'Variable', 'Grocery 🛒')" class="whitespace-nowrap px-3 py-1.5 rounded-lg bg-slate-50 text-slate-600 text-[10px] font-bold border border-slate-100">🛒 $80 Grocery</button>
+                </div>
+
+                <div class="relative pt-2">
+                    <span class="absolute left-0 top-0 text-[10px] font-black text-blue-400 uppercase tracking-widest">Amount (AUD)</span>
+                    <input id="amount" type="number" step="0.01" placeholder="0.00" class="w-full pt-6 pb-2 text-4xl font-black outline-none border-b-2 border-slate-50 focus:border-blue-500 transition-all mono">
+                </div>
+
+                <div id="catGrid" class="grid grid-cols-3 gap-2"></div>
+
+                <input id="note" type="text" placeholder="Note / Description" class="w-full p-4 bg-slate-50 rounded-2xl text-sm outline-none focus:ring-2 ring-blue-50 transition-all">
+                
+                <button onclick="saveRecord()" class="btn-blue w-full py-4 rounded-2xl font-extrabold text-sm uppercase tracking-widest shadow-xl shadow-blue-200">Save Transaction</button>
             </div>
         </div>
 
-        <div class="app-card p-5">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="font-bold text-slate-800">最近记录</h3>
-                <button onclick="clearAll()" class="text-xs text-slate-300 font-bold uppercase">清空历史</button>
+        <div class="glass-card p-6">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="font-bold text-slate-800 tracking-tight">Timeline</h3>
+                <button onclick="clearAll()" class="text-[10px] text-slate-300 font-bold uppercase tracking-widest">Clear All</button>
             </div>
-            <div id="history" class="space-y-4"></div>
+            <div id="history" class="space-y-5"></div>
         </div>
     </div>
 
     <script>
         const CATEGORIES = {
             expense: [
-                { name: '餐饮', icon: '🍱' }, { name: '交通', icon: '🚗' },
-                { name: '固定', icon: '🏠' }, { name: '变动', icon: '🛒' },
-                { name: '享乐', icon: '☕' }, { name: '其它', icon: '📦' }
+                { name: 'Fixed', icon: '🏠' }, { name: 'Variable', icon: '🛒' },
+                { name: 'Fun', icon: '☕' }, { name: 'Transit', icon: '🚗' },
+                { name: 'Health', icon: '💊' }, { name: 'Other', icon: '📦' }
             ],
             income: [
-                { name: '工资', icon: '💼' }, { name: '奖金', icon: '🎁' },
-                { name: '理财', icon: '📈' }, { name: '其它', icon: '💰' }
+                { name: 'Salary', icon: '💼' }, { name: 'Side', icon: '📈' },
+                { name: 'Gift', icon: '🎉' }, { name: 'Other', icon: '💰' }
             ]
         };
 
         let currentType = 'expense';
-        let selectedCategory = '';
+        let selectedCat = '';
 
         function init() {
-            document.getElementById('currentDateDisplay').innerText = new Date().toLocaleDateString('zh-CN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-            generateMonthSelector();
-            renderCategories();
+            document.getElementById('dateDisplay').innerText = new Date().toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'long' });
+            generateMonths();
+            renderCats();
             updateStats();
             renderHistory();
-            renderSubs();
+            renderOngoing();
         }
 
-        function generateMonthSelector() {
-            const selector = document.getElementById('monthSelector');
+        function generateMonths() {
+            const sel = document.getElementById('monthSelector');
             const now = new Date();
             for (let i = 0; i < 12; i++) {
                 const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-                const val = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-                selector.innerHTML += `<option value="${val}">${d.toLocaleDateString('zh-CN', {month:'short', year:'numeric'})}</option>`;
+                const v = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+                sel.innerHTML += `<option value="${v}">${d.toLocaleDateString('en-AU', {month:'short', year:'numeric'})}</option>`;
             }
         }
 
-        function switchType(type) {
-            currentType = type;
-            document.getElementById('expenseTab').className = type === 'expense' ? 'tab-active flex-1 py-2 rounded-lg text-sm font-bold' : 'flex-1 py-2 text-slate-500 text-sm font-bold';
-            document.getElementById('incomeTab').className = type === 'income' ? 'tab-active flex-1 py-2 rounded-lg text-sm font-bold' : 'flex-1 py-2 text-slate-500 text-sm font-bold';
-            selectedCategory = '';
-            renderCategories();
+        function switchType(t) {
+            currentType = t;
+            document.getElementById('expTab').className = t === 'expense' ? 'tab-active flex-1 py-2.5 rounded-xl text-xs font-bold' : 'flex-1 py-2.5 rounded-xl text-xs font-bold text-slate-400';
+            document.getElementById('incTab').className = t === 'income' ? 'tab-active flex-1 py-2.5 rounded-xl text-xs font-bold' : 'flex-1 py-2.5 rounded-xl text-xs font-bold text-slate-400';
+            selectedCat = '';
+            renderCats();
         }
 
-        function renderCategories() {
-            const container = document.getElementById('categoryContainer');
-            container.innerHTML = CATEGORIES[currentType].map(cat => `
-                <button onclick="selectCategory('${cat.name}')" data-cat="${cat.name}" class="cat-btn flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-50 border-2 border-transparent transition-all">
-                    <span>${cat.icon}</span>
-                    <span class="text-xs font-bold text-slate-700">${cat.name}</span>
+        function renderCats() {
+            const container = document.getElementById('catGrid');
+            container.innerHTML = CATEGORIES[currentType].map(c => `
+                <button onclick="selectCat('${c.name}')" data-cat="${c.name}" class="cat-btn flex flex-col items-center p-3 rounded-2xl bg-slate-50 border-2 border-transparent">
+                    <span class="text-xl mb-1">${c.icon}</span>
+                    <span class="text-[9px] font-bold text-slate-500 uppercase">${c.name}</span>
                 </button>
             `).join('');
         }
 
-        function selectCategory(name) {
-            selectedCategory = name;
-            document.querySelectorAll('.cat-btn').forEach(btn => {
-                btn.classList.toggle('category-selected', btn.dataset.cat === name);
-            });
+        function selectCat(n) {
+            selectedCat = n;
+            document.querySelectorAll('.cat-btn').forEach(b => b.classList.toggle('cat-selected', b.dataset.cat === n));
         }
 
         function saveRecord() {
-            const amount = parseFloat(document.getElementById('amount').value);
-            const note = document.getElementById('note').value || '未备注';
-            if (!amount || !selectedCategory) return;
+            const amt = parseFloat(document.getElementById('amount').value);
+            const note = document.getElementById('note').value || 'General';
+            if (!amt || !selectedCat) return alert('Enter amount & category');
 
-            const records = JSON.parse(localStorage.getItem('f_records_v3') || '[]');
+            const records = JSON.parse(localStorage.getItem('f_pro_data') || '[]');
             records.unshift({
                 id: Date.now(),
                 type: currentType,
-                amount: amount,
-                category: selectedCategory,
+                amount: amt,
+                category: selectedCat,
                 note: note,
                 date: new Date().toISOString().split('T')[0]
             });
-            localStorage.setItem('f_records_v3', JSON.stringify(records));
+            localStorage.setItem('f_pro_data', JSON.stringify(records));
             
             document.getElementById('amount').value = '';
             document.getElementById('note').value = '';
@@ -223,10 +221,17 @@
             renderHistory();
         }
 
+        function quickAdd(amt, cat, note) {
+            document.getElementById('amount').value = amt;
+            document.getElementById('note').value = note;
+            selectCat(cat);
+            setTimeout(saveRecord, 300);
+        }
+
         function updateStats() {
-            const selMonth = document.getElementById('monthSelector').value;
-            const records = JSON.parse(localStorage.getItem('f_records_v3') || '[]');
-            const monthRecs = records.filter(r => r.date.startsWith(selMonth));
+            const selM = document.getElementById('monthSelector').value;
+            const records = JSON.parse(localStorage.getItem('f_pro_data') || '[]');
+            const monthRecs = records.filter(r => r.date.startsWith(selM));
 
             const exp = monthRecs.filter(r => r.type === 'expense').reduce((s, r) => s + r.amount, 0);
             const inc = monthRecs.filter(r => r.type === 'income').reduce((s, r) => s + r.amount, 0);
@@ -234,60 +239,72 @@
             document.getElementById('totalExpense').innerText = `$ ${exp.toFixed(2)}`;
             document.getElementById('totalIncome').innerText = `$ ${inc.toFixed(2)}`;
             document.getElementById('netIncome').innerText = `$ ${(inc - exp).toFixed(2)}`;
-            
-            // 计算固定开支平均值
-            const subs = JSON.parse(localStorage.getItem('f_subs') || '[]');
-            const qs = JSON.parse(localStorage.getItem('f_qs') || '[]');
+
+            // Ongoing Avg Calculation
+            const subs = JSON.parse(localStorage.getItem('f_pro_subs') || '[]');
+            const qs = JSON.parse(localStorage.getItem('f_pro_qs') || '[]');
             const avg = subs.reduce((s,r)=>s+r.amt, 0) + qs.reduce((s,r)=>s+(r.amt/3), 0);
-            document.getElementById('avgOngoing').innerText = `月均固定预留: $${avg.toFixed(2)}`;
+            document.getElementById('avgOngoingLabel').innerText = `Avg: $${avg.toFixed(0)}/mo`;
         }
 
         function renderHistory() {
-            const records = JSON.parse(localStorage.getItem('f_records_v3') || '[]');
-            document.getElementById('history').innerHTML = records.slice(0, 15).map(r => `
+            const records = JSON.parse(localStorage.getItem('f_pro_data') || '[]');
+            document.getElementById('history').innerHTML = records.slice(0, 10).map(r => `
                 <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 flex items-center justify-center bg-slate-50 rounded-xl text-lg">${CATEGORIES[r.type].find(c=>c.name===r.category)?.icon || '💰'}</div>
+                    <div class="flex items-center gap-4">
+                        <div class="w-11 h-11 flex items-center justify-center bg-slate-50 rounded-2xl text-lg">${CATEGORIES[r.type].find(c=>c.name===r.category)?.icon || '💰'}</div>
                         <div>
-                            <p class="text-sm font-bold">${r.category}</p>
+                            <p class="text-xs font-bold text-slate-800">${r.category}</p>
                             <p class="text-[10px] text-slate-400 font-medium">${r.note}</p>
                         </div>
                     </div>
-                    <p class="text-sm font-black mono ${r.type==='expense'?'text-slate-800':'text-blue-600'}">${r.type==='expense'?'-':'+'} ${r.amount.toFixed(2)}</p>
+                    <div class="text-right">
+                        <p class="text-sm font-black mono ${r.type==='expense'?'text-slate-800':'text-blue-600'}">${r.type==='expense'?'-':'+'} $${r.amount.toFixed(2)}</p>
+                    </div>
                 </div>
-            `).join('');
+            `).join('') || '<p class="text-center text-xs text-slate-300">No records yet</p>';
         }
 
-        // 订阅相关逻辑
-        function addSubscriptionPrompt() {
-            const name = prompt("订阅名称 (如 Netflix):");
-            const amt = parseFloat(prompt("每月金额 ($):"));
-            if (name && amt) {
-                const subs = JSON.parse(localStorage.getItem('f_subs') || '[]');
-                subs.push({id: Date.now(), name, amt});
-                localStorage.setItem('f_subs', JSON.stringify(subs));
-                renderSubs(); updateStats();
+        // Ongoing Logic
+        function addSubscription() {
+            const n = prompt("App Name (e.g. Netflix):");
+            const a = parseFloat(prompt("Monthly Cost ($):"));
+            if (n && a) {
+                const s = JSON.parse(localStorage.getItem('f_pro_subs') || '[]');
+                s.push({id: Date.now(), name: n, amt: a});
+                localStorage.setItem('f_pro_subs', JSON.stringify(s));
+                renderOngoing(); updateStats();
             }
         }
 
-        function addQuarterlyPrompt() {
-            const name = prompt("账单名称 (如 Water):");
-            const amt = parseFloat(prompt("每季度金额 ($):"));
-            if (name && amt) {
-                const qs = JSON.parse(localStorage.getItem('f_qs') || '[]');
-                qs.push({id: Date.now(), name, amt});
-                localStorage.setItem('f_qs', JSON.stringify(qs));
-                renderSubs(); updateStats();
+        function addQuarterly() {
+            const n = prompt("Bill Name (e.g. Water):");
+            const a = parseFloat(prompt("Quarterly Cost ($):"));
+            if (n && a) {
+                const s = JSON.parse(localStorage.getItem('f_pro_qs') || '[]');
+                s.push({id: Date.now(), name: n, amt: a});
+                localStorage.setItem('f_pro_qs', JSON.stringify(s));
+                renderOngoing(); updateStats();
             }
         }
 
-        function renderSubs() {
-            const subs = JSON.parse(localStorage.getItem('f_subs') || '[]');
-            const qs = JSON.parse(localStorage.getItem('f_qs') || '[]');
-            document.getElementById('subscriptionList').innerHTML = subs.map(s => `
-                <div class="flex justify-between text-[10px] bg-slate-50 p-1.5 rounded-lg font-bold">
-                    <span class="text-slate-500">${s.name}</span>
-                    <span>$${s.amt}</span>
-                </div>
-            `).join('');
-            document.getElementById('quarterlyList').innerHTML =
+        function renderOngoing() {
+            const subs = JSON.parse(localStorage.getItem('f_pro_subs') || '[]');
+            const qs = JSON.parse(localStorage.getItem('f_pro_qs') || '[]');
+            document.getElementById('subList').innerHTML = subs.slice(-3).map(s => `<div class="flex justify-between text-[10px] font-bold text-slate-600"><span>${s.name}</span><span>$${s.amt}</span></div>`).join('');
+            document.getElementById('qList').innerHTML = qs.slice(-3).map(q => `<div class="flex justify-between text-[10px] font-bold text-orange-600"><span>${q.name}</span><span>$${q.amt}</span></div>`).join('');
+        }
+
+        function clearAll() { if(confirm("Clear all transactions?")) { localStorage.removeItem('f_pro_data'); location.reload(); } }
+        
+        function exportData() {
+            const records = JSON.parse(localStorage.getItem('f_pro_data') || '[]');
+            let csv = 'Type,Category,Amount,Date,Note\n' + records.map(r => `${r.type},${r.category},${r.amount},${r.date},${r.note}`).join('\n');
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'finance_export.csv'; a.click();
+        }
+
+        init();
+    </script>
+</body>
+</html>
